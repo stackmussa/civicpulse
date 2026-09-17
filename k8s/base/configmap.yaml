@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: civicpulse-config
+  namespace: civicpulse
+data:
+  TRIAGE_PROVIDER: "llm"

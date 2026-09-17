@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
+
+jobs:
+  lint-and-type:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "linting"
+
+  test-backend:
+    needs: lint-and-type
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "testing backend"
+
+  test-frontend:
+    needs: lint-and-type
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "testing frontend"
+
+  build:
+    needs: [test-backend, test-frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "building"
+
+  scan:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "scanning"
+
+  manifests:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "manifests check"
+
+  integration:
+    needs: manifests
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "integration tests"

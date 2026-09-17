@@ -1,0 +1,15 @@
+.env
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+dist/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+*.log
+.DS_Store
+.agent/
+AGENT_CONTEXT.md

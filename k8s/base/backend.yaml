@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: civicpulse
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: backend:latest
+        ports:
+        - containerPort: 8000
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        envFrom:
+        - configMapRef:
+            name: civicpulse-config
+        - secretRef:
+            name: civicpulse-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: civicpulse
+spec:
+  selector:
+    app: backend
+  ports:
+  - port: 80
+    targetPort: 8000
+  type: ClusterIP

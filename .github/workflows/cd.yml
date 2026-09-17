@@ -1,0 +1,25 @@
+name: CD
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "testing"
+
+  build-push:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "build and push"
+
+  deploy-k8s:
+    needs: build-push
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "deploy to k8s"
