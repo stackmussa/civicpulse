@@ -5,6 +5,11 @@ metadata:
   namespace: civicpulse
 spec:
   replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: backend
@@ -13,11 +18,34 @@ spec:
       labels:
         app: backend
     spec:
+      terminationGracePeriodSeconds: 30
       containers:
       - name: backend
-        image: backend:latest
+        image: backend
         ports:
         - containerPort: 8000
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          failureThreshold: 30
+          periodSeconds: 2
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sleep", "5"]
         resources:
           requests:
             cpu: 100m
