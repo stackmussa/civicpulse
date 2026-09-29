@@ -195,7 +195,7 @@ jobs:
           push: false
 
       - name: Run Trivy Scanner on Backend
-        uses: aquasecurity/trivy-action@v0.29.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: 'backend:ci'
           format: 'table'
@@ -204,7 +204,7 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
       - name: Run Trivy Scanner on Frontend
-        uses: aquasecurity/trivy-action@v0.29.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: 'frontend:ci'
           format: 'table'
