@@ -194,23 +194,29 @@ jobs:
           tags: frontend:ci
           push: false
 
+      - name: Install Trivy
+        shell: bash
+        run: |
+          set -euo pipefail
+          TRIVY_VERSION="0.57.1"
+          curl -fsSL -o /tmp/trivy.deb \
+            "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.deb"
+          sudo dpkg -i /tmp/trivy.deb
+          trivy --version
+
       - name: Run Trivy Scanner on Backend
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          image-ref: 'backend:ci'
-          format: 'table'
-          exit-code: '1'
-          ignore-unfixed: true
-          severity: 'CRITICAL,HIGH'
+        shell: bash
+        run: |
+          trivy image --format table --exit-code 1 \
+            --ignore-unfixed --severity CRITICAL,HIGH \
+            backend:ci
 
       - name: Run Trivy Scanner on Frontend
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          image-ref: 'frontend:ci'
-          format: 'table'
-          exit-code: '1'
-          ignore-unfixed: true
-          severity: 'CRITICAL,HIGH'
+        shell: bash
+        run: |
+          trivy image --format table --exit-code 1 \
+            --ignore-unfixed --severity CRITICAL,HIGH \
+            frontend:ci
 
   manifests:
     name: Kubeconform Manifest Validation
