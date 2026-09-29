@@ -40,6 +40,7 @@ _HIGH_PRIORITY_KEYWORDS: list[str] = [
     "electrocution", "spark", "short circuit", "foran", "jaldi",
     "immediately", "critical", "severe", "fatal",
     "janleva", "emergency call", "blast", "gas leak", "ambulance", "casualty",
+    "drowning", "hazards", "monsoon", "short-circuit", "waterlogging",
 ]
 
 
