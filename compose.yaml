@@ -4,7 +4,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "5173:5173"
+      - "5173:80"
     networks:
       - edge
     depends_on:
@@ -20,15 +20,23 @@ services:
     networks:
       - edge
       - internal
+    # Dev bind mount: mounted for instant hot-reload during local iteration without container rebuilds.
     volumes:
       - ./backend:/app
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://user:password@postgres:5432/civicpulse}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      TRIAGE_PROVIDER: ${TRIAGE_PROVIDER:-rules}
+      RATE_LIMIT_PER_MIN: ${RATE_LIMIT_PER_MIN:-30}
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -53,6 +61,7 @@ services:
 
   redis:
     image: redis:7
+    command: ["redis-server", "--appendonly", "yes"]
     ports:
       - "6379:6379"
     volumes:

@@ -23,9 +23,34 @@ spec:
         - name: POSTGRES_USER
           value: user
         - name: POSTGRES_PASSWORD
-          value: password
+          valueFrom:
+            secretKeyRef:
+              name: civicpulse-secret
+              key: POSTGRES_PASSWORD
         - name: POSTGRES_DB
           value: civicpulse
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        startupProbe:
+          exec:
+            command: ["pg_isready", "-U", "user", "-d", "civicpulse"]
+          failureThreshold: 30
+          periodSeconds: 2
+        livenessProbe:
+          exec:
+            command: ["pg_isready", "-U", "user", "-d", "civicpulse"]
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command: ["pg_isready", "-U", "user", "-d", "civicpulse"]
+          initialDelaySeconds: 5
+          periodSeconds: 5
         volumeMounts:
         - name: pgdata
           mountPath: /var/lib/postgresql/data

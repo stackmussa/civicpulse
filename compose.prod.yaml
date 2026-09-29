@@ -1,30 +1,67 @@
 services:
   frontend:
     image: ${IMAGE_TAG:-frontend:latest}
+    restart: unless-stopped
+    ports:
+      - "80:80"
     networks:
       - edge
     depends_on:
       backend:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:80/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
+        reservations:
+          cpus: "0.05"
+          memory: 32M
 
   backend:
     image: ${IMAGE_TAG:-backend:latest}
+    restart: unless-stopped
+    # Production note: Dev bind mount (- ./backend:/app) is intentionally omitted in production;
+    # the container image is an immutable, pre-tested release artifact and mounting live host source
+    # would bypass CI/CD verification and introduce non-deterministic runtime state.
     networks:
       - edge
       - internal
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://user:password@postgres:5432/civicpulse}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      TRIAGE_PROVIDER: ${TRIAGE_PROVIDER:-rules}
+      RATE_LIMIT_PER_MIN: ${RATE_LIMIT_PER_MIN:-60}
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 10s
       timeout: 5s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+        reservations:
+          cpus: "0.10"
+          memory: 128M
 
   postgres:
     image: postgres:16
+    restart: unless-stopped
+    # Security: No published host ports in production (Postgres is strictly isolated on the internal network)
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
@@ -38,9 +75,20 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+        reservations:
+          cpus: "0.10"
+          memory: 128M
 
   redis:
     image: redis:7
+    restart: unless-stopped
+    # Security: No published host ports in production (Redis is strictly isolated on the internal network)
+    command: ["redis-server", "--appendonly", "yes"]
     volumes:
       - redisdata:/data
     networks:
@@ -50,6 +98,14 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
+        reservations:
+          cpus: "0.05"
+          memory: 32M
 
 networks:
   edge:
@@ -60,3 +116,4 @@ volumes:
   pgdata:
   redisdata:
   ollama_models:
+
