@@ -7,10 +7,9 @@ GET /ready  — readiness. 200 only if Postgres and Redis are both reachable.
 from __future__ import annotations
 
 from fastapi import APIRouter
-from sqlalchemy import text as sa_text
 from starlette.responses import JSONResponse
 
-from app.core.database import async_session_factory
+from app.core.database import check_database_health
 from app.providers.cache import get_redis
 
 router = APIRouter()
@@ -27,8 +26,7 @@ async def readiness_check():
     """Readiness probe — 200 only if Postgres AND Redis are reachable."""
     # Check Postgres
     try:
-        async with async_session_factory() as session:
-            await session.execute(sa_text("SELECT 1"))
+        await check_database_health()
     except Exception:
         return JSONResponse(
             status_code=503,

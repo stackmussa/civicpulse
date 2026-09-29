@@ -211,3 +211,14 @@ def get_active_provider_name() -> str:
 def get_recent_outcomes() -> list[dict]:
     """Return the last 20 triage outcomes."""
     return list(_triage_outcomes)
+
+
+async def get_recent_outcomes_with_db(db: AsyncSession, limit: int = 20) -> list[dict]:
+    """Return combined in-memory and database triage outcomes for observability."""
+    in_memory = get_recent_outcomes()
+    if len(in_memory) < limit:
+        db_outcomes = await complaint_repository.get_recent_triage_outcomes(
+            db, limit=limit - len(in_memory)
+        )
+        return (in_memory + db_outcomes)[:limit]
+    return in_memory[:limit]

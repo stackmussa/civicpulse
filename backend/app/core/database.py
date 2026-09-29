@@ -25,6 +25,10 @@ async_session_factory = async_sessionmaker(
 )
 
 
+# Type alias for four-layer boundary isolation (routes import DatabaseSession, not SQLAlchemy)
+DatabaseSession = AsyncSession
+
+
 async def get_db() -> AsyncSession:  # type: ignore[misc]
     """Dependency that yields an async database session."""
     async with async_session_factory() as session:
@@ -36,3 +40,12 @@ async def get_db() -> AsyncSession:  # type: ignore[misc]
             raise
         finally:
             await session.close()
+
+
+async def check_database_health() -> bool:
+    """Readiness probe health check — executes ping query without leaking SQL into routes."""
+    from sqlalchemy import text
+
+    async with async_session_factory() as session:
+        await session.execute(text("SELECT 1"))
+    return True

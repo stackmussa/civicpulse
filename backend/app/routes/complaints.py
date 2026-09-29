@@ -11,10 +11,9 @@ from __future__ import annotations
 import uuid
 
 from fastapi import APIRouter, Depends, Query, Request
-from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import JSONResponse
 
-from app.core.database import get_db
+from app.core.database import DatabaseSession, get_db
 from app.models.complaint import Category, Priority, Status
 from app.providers.rate_limiter import check_rate_limit
 from app.schemas.complaint import (
@@ -33,7 +32,7 @@ router = APIRouter(prefix="/api/complaints", tags=["complaints"])
 async def create_complaint(
     payload: ComplaintCreate,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: DatabaseSession = Depends(get_db),
 ):
     """Validate → triage → persist. 201. 400 on validation. 429 on rate limit."""
     # Rate limiting by client IP (respecting X-Forwarded-For if behind proxy/Ingress)
@@ -60,7 +59,7 @@ async def create_complaint(
 @router.get("/{complaint_id}", response_model=ComplaintResponse)
 async def get_complaint(
     complaint_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
+    db: DatabaseSession = Depends(get_db),
 ):
     """200 / 404."""
     complaint = await complaint_service.get_complaint(db, complaint_id)
@@ -79,7 +78,7 @@ async def list_complaints(
     status: Status | None = Query(default=None),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
-    db: AsyncSession = Depends(get_db),
+    db: DatabaseSession = Depends(get_db),
 ):
     """Paginated, filterable list."""
     items, total = await complaint_service.list_complaints(
@@ -102,7 +101,7 @@ async def list_complaints(
 async def update_status(
     complaint_id: uuid.UUID,
     payload: StatusUpdate,
-    db: AsyncSession = Depends(get_db),
+    db: DatabaseSession = Depends(get_db),
 ):
     """Enforce the state machine. Invalid transition → 409."""
     try:
