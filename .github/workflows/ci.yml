@@ -85,7 +85,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TRIAGE_PROVIDER: simulated
-      DATABASE_URL: sqlite+aiosqlite:///:memory:
+      DATABASE_URL: "sqlite+aiosqlite:///:memory:"
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -263,37 +263,26 @@ jobs:
 
       - name: Test End-to-End Complaint Ingestion & Triage
         run: |
-          RESPONSE=$(curl -s -X POST http://localhost:8000/api/complaints \
+          curl -s -X POST http://localhost:8000/api/complaints \
             -H "Content-Type: application/json" \
-            -d '{"text":"Severe burst water pipe flooding main commercial avenue","location":"Sector F-10 Market"}')
-          echo "Complaint Response: $RESPONSE"
-          python3 -c "
-          import json, sys
-          res = json.loads('''$RESPONSE''')
-          assert res.get('id') is not None, 'Missing complaint id'
-          assert res.get('category') in ['roads', 'water', 'electricity', 'waste', 'other'], f'Invalid category: {res.get(\"category\")}'
-          assert res.get('priority') in ['low', 'medium', 'high', 'urgent'], f'Invalid priority: {res.get(\"priority\")}'
-          print('E2E Complaint ingestion contract verified successfully!')
-          "
+            -d '{"text":"Severe burst water pipe flooding main commercial avenue","location":"Sector F-10 Market"}' \
+            -o complaint.json
+          cat complaint.json
+          python3 -c "import json; res = json.load(open('complaint.json')); assert res.get('id') is not None, 'Missing complaint id'; assert res.get('category') in ['roads', 'water', 'electricity', 'waste', 'other'], f'Invalid category: {res.get(\"category\")}'; assert res.get('priority') in ['low', 'medium', 'high', 'urgent'], f'Invalid priority: {res.get(\"priority\")}'; print('E2E Complaint ingestion contract verified successfully!')"
 
       - name: Test Redis Cache MISS and HIT Transitions
         run: |
           echo "Request 1 to /api/stats (Expect MISS)..."
-          H1=$(curl -s -I http://localhost:8000/api/stats | grep -i "x-cache" | awk '{print $2}' | tr -d '\r\n')
+          curl -s -D headers1.txt -o /dev/null http://localhost:8000/api/stats
+          H1=$(grep -i "x-cache:" headers1.txt | awk '{print $2}' | tr -d '\r\n')
           echo "First response X-Cache: $H1"
 
           echo "Request 2 to /api/stats (Expect HIT)..."
-          H2=$(curl -s -I http://localhost:8000/api/stats | grep -i "x-cache" | awk '{print $2}' | tr -d '\r\n')
+          curl -s -D headers2.txt -o /dev/null http://localhost:8000/api/stats
+          H2=$(grep -i "x-cache:" headers2.txt | awk '{print $2}' | tr -d '\r\n')
           echo "Second response X-Cache: $H2"
 
-          python3 -c "
-          h1 = '$H1'.strip().upper()
-          h2 = '$H2'.strip().upper()
-          print(f'Observed cache sequence: {h1} -> {h2}')
-          assert 'MISS' in h1 or h1 == '', 'First request should result in MISS'
-          assert 'HIT' in h2, 'Second request should result in HIT'
-          print('Cache state transition MISS -> HIT verified!')
-          "
+          python3 -c "h1 = '$H1'.strip().upper(); h2 = '$H2'.strip().upper(); print(f'Observed cache sequence: {h1} -> {h2}'); assert 'MISS' in h1 or h1 == '', 'First request should result in MISS'; assert 'HIT' in h2, 'Second request should result in HIT'; print('Cache state transition MISS -> HIT verified!')"
 
       - name: Teardown Docker Compose
         if: always()
