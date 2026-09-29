@@ -61,9 +61,7 @@ class LLMTriage:
         )
 
     async def triage(self, text: str, location: str) -> TriageResult:
-        user_msg = (
-            f"<complaint>{text}</complaint>\nLocation: {location}"
-        )
+        user_msg = f"<complaint>{text}</complaint>\nLocation: {location}"
 
         response = await self._client.chat.completions.create(
             model=self._model,
@@ -95,8 +93,6 @@ class LLMTriage:
         try:
             result = TriageResult.model_validate(data)
         except ValidationError as exc:
-            raise ValueError(
-                f"LLM output failed schema validation: {exc.errors()}"
-            ) from exc
+            raise ValueError(f"LLM output failed schema validation: {exc.errors()}") from exc
 
         return result

@@ -1,6 +1,7 @@
 """Tests for AI triage providers, fallback mechanisms, and prompt injection defense."""
 
 import pytest
+
 from app.models.complaint import Category, Priority
 from app.providers.triage.rules import RuleBasedTriage
 from app.providers.triage.simulated import SimulatedTriage
@@ -77,6 +78,7 @@ async def test_prompt_injection_guardrail():
 @pytest.mark.asyncio
 async def test_malformed_json_provider_triggers_fallback(monkeypatch):
     """When an LLM provider returns invalid non-JSON output, complaint_service falls back to rules:fallback."""
+
     class CorruptedLLMProvider:
         name: str = "corrupted_mock"
 
@@ -91,4 +93,3 @@ async def test_malformed_json_provider_triggers_fallback(monkeypatch):
     assert triaged_by == "rules:fallback"
     assert result.category == Category.sanitation
     assert latency >= 0
-

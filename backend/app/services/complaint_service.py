@@ -48,9 +48,7 @@ class InvalidTransition(Exception):
     def __init__(self, from_status: Status, to_status: Status) -> None:
         self.from_status = from_status
         self.to_status = to_status
-        super().__init__(
-            f"Invalid transition from {from_status.value} to {to_status.value}"
-        )
+        super().__init__(f"Invalid transition from {from_status.value} to {to_status.value}")
 
 
 def validate_transition(current: Status, target: Status) -> Status:
@@ -86,15 +84,15 @@ async def _run_triage(text: str, location: str) -> tuple[TriageResult, str, int]
             latency_ms = int((time.monotonic() - start) * 1000)
 
             # Cache the successful result
-            await set_cached_triage(
-                text, location, result.model_dump(mode="json")
-            )
+            await set_cached_triage(text, location, result.model_dump(mode="json"))
 
-            _triage_outcomes.append({
-                "provider": provider_name,
-                "latency_ms": latency_ms,
-                "fallback": False,
-            })
+            _triage_outcomes.append(
+                {
+                    "provider": provider_name,
+                    "latency_ms": latency_ms,
+                    "fallback": False,
+                }
+            )
 
             return result, provider_name, latency_ms
 
@@ -123,11 +121,13 @@ async def _run_triage(text: str, location: str) -> tuple[TriageResult, str, int]
     result = await fallback.triage(text, location)
     latency_ms = int((time.monotonic() - start) * 1000)
 
-    _triage_outcomes.append({
-        "provider": "rules:fallback",
-        "latency_ms": latency_ms,
-        "fallback": True,
-    })
+    _triage_outcomes.append(
+        {
+            "provider": "rules:fallback",
+            "latency_ms": latency_ms,
+            "fallback": True,
+        }
+    )
 
     return result, "rules:fallback", latency_ms
 
@@ -137,9 +137,7 @@ async def create_complaint(
     payload: ComplaintCreate,
 ) -> complaint_repository.Complaint:
     """Validate → triage → persist. Invalidate stats cache on write."""
-    result, triaged_by, latency_ms = await _run_triage(
-        payload.text, payload.location
-    )
+    result, triaged_by, latency_ms = await _run_triage(payload.text, payload.location)
 
     complaint = await complaint_repository.create_complaint(
         db,
@@ -159,9 +157,7 @@ async def create_complaint(
     return complaint
 
 
-async def get_complaint(
-    db: AsyncSession, complaint_id: uuid.UUID
-):
+async def get_complaint(db: AsyncSession, complaint_id: uuid.UUID):
     """Fetch a single complaint by ID."""
     return await complaint_repository.get_complaint_by_id(db, complaint_id)
 
@@ -199,9 +195,7 @@ async def update_status(
     # Validate against the explicit transition table
     validate_transition(complaint.status, target_status)
 
-    updated = await complaint_repository.update_complaint_status(
-        db, complaint_id, target_status
-    )
+    updated = await complaint_repository.update_complaint_status(db, complaint_id, target_status)
 
     # Invalidate stats cache on status change
     await invalidate_stats_cache()

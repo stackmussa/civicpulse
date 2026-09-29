@@ -91,10 +91,7 @@ async def list_complaints(
         page_size=page_size,
     )
     return PaginatedComplaints(
-        items=[
-            ComplaintResponse.model_validate(c, from_attributes=True)
-            for c in items
-        ],
+        items=[ComplaintResponse.model_validate(c, from_attributes=True) for c in items],
         total=total,
         page=page,
         page_size=page_size,
@@ -109,9 +106,7 @@ async def update_status(
 ):
     """Enforce the state machine. Invalid transition → 409."""
     try:
-        complaint = await complaint_service.update_status(
-            db, complaint_id, payload.status
-        )
+        complaint = await complaint_service.update_status(db, complaint_id, payload.status)
     except InvalidTransition as exc:
         return JSONResponse(
             status_code=409,

@@ -1,8 +1,8 @@
 """Tests for rate limiting logic and cache hashing."""
 
 import pytest
+
 from app.providers.cache import _triage_cache_key
-from app.providers import rate_limiter
 
 
 def test_triage_cache_key_deterministic():
@@ -19,11 +19,13 @@ def test_triage_cache_key_deterministic():
 @pytest.mark.asyncio
 async def test_rate_limiter_exceeded_returns_429(client, monkeypatch):
     """When check_rate_limit indicates limit is reached, POST returns 429 with Retry-After."""
+
     # Mock check_rate_limit to return retry-after 45 seconds
     async def mock_rate_limit(ip: str):
         return 45
 
     from app.routes import complaints as complaints_route
+
     monkeypatch.setattr(complaints_route, "check_rate_limit", mock_rate_limit)
 
     response = await client.post(

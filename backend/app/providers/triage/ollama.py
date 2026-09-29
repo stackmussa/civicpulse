@@ -83,8 +83,6 @@ class OllamaTriage:
         try:
             result = TriageResult.model_validate(parsed)
         except ValidationError as exc:
-            raise ValueError(
-                f"Ollama output failed schema validation: {exc.errors()}"
-            ) from exc
+            raise ValueError(f"Ollama output failed schema validation: {exc.errors()}") from exc
 
         return result

@@ -44,9 +44,7 @@ def configure_logging() -> None:
 class RequestIDMiddleware(BaseHTTPMiddleware):
     """Read X-Request-ID or generate one; bind to logger and echo in response."""
 
-    async def dispatch(
-        self, request: Request, call_next: RequestResponseEndpoint
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
 
         # Bind to structlog contextvars

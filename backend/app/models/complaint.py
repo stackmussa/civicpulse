@@ -59,8 +59,8 @@ class Status(str, enum.Enum):
 TRANSITIONS: dict[Status, set[Status]] = {
     Status.open: {Status.in_progress, Status.rejected},
     Status.in_progress: {Status.resolved, Status.rejected},
-    Status.resolved: set(),      # terminal
-    Status.rejected: set(),      # terminal
+    Status.resolved: set(),  # terminal
+    Status.rejected: set(),  # terminal
 }
 
 

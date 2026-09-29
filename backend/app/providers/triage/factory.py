@@ -12,17 +12,22 @@ def get_triage_provider() -> TriageProvider:
 
     if name in ("llm", "groq"):
         from app.providers.triage.llm import LLMTriage
+
         return LLMTriage()
     elif name == "ollama":
         from app.providers.triage.ollama import OllamaTriage
+
         return OllamaTriage()
     elif name == "simulated":
         from app.providers.triage.simulated import SimulatedTriage
+
         return SimulatedTriage()
     elif name == "simulated:fail":
         from app.providers.triage.simulated import SimulatedTriage
+
         return SimulatedTriage(fail=True)
     else:
         # Default to rules-based — always available, never fails
         from app.providers.triage.rules import RuleBasedTriage
+
         return RuleBasedTriage()

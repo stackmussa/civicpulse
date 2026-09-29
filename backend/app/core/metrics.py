@@ -10,7 +10,6 @@ Tracks:
 from __future__ import annotations
 
 import threading
-import time
 from collections import defaultdict
 
 _HISTOGRAM_BUCKETS = (0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, float("inf"))
@@ -54,7 +53,9 @@ def format_prometheus_metrics() -> str:
         lines.append("# HELP civicpulse_requests_total Total HTTP requests handled")
         lines.append("# TYPE civicpulse_requests_total counter")
         if not _request_counts:
-            lines.append('civicpulse_requests_total{method="GET",endpoint="/health",status="200"} 0')
+            lines.append(
+                'civicpulse_requests_total{method="GET",endpoint="/health",status="200"} 0'
+            )
         else:
             for (method, path, status), count in sorted(_request_counts.items()):
                 lines.append(
@@ -73,11 +74,15 @@ def format_prometheus_metrics() -> str:
                 lines.append(
                     f'civicpulse_request_duration_seconds_bucket{{endpoint="{path}",le="{le_str}"}} {b_count}'
                 )
-            lines.append(f'civicpulse_request_duration_seconds_sum{{endpoint="{path}"}} {total:.6f}')
+            lines.append(
+                f'civicpulse_request_duration_seconds_sum{{endpoint="{path}"}} {total:.6f}'
+            )
             lines.append(f'civicpulse_request_duration_seconds_count{{endpoint="{path}"}} {count}')
 
         # 3. Triage duration histogram
-        lines.append("\n# HELP civicpulse_triage_duration_seconds LLM/rules triage latency in seconds")
+        lines.append(
+            "\n# HELP civicpulse_triage_duration_seconds LLM/rules triage latency in seconds"
+        )
         lines.append("# TYPE civicpulse_triage_duration_seconds histogram")
         for provider, values in sorted(_triage_latencies.items()):
             count = len(values)
@@ -88,11 +93,17 @@ def format_prometheus_metrics() -> str:
                 lines.append(
                     f'civicpulse_triage_duration_seconds_bucket{{provider="{provider}",le="{le_str}"}} {b_count}'
                 )
-            lines.append(f'civicpulse_triage_duration_seconds_sum{{provider="{provider}"}} {total:.6f}')
-            lines.append(f'civicpulse_triage_duration_seconds_count{{provider="{provider}"}} {count}')
+            lines.append(
+                f'civicpulse_triage_duration_seconds_sum{{provider="{provider}"}} {total:.6f}'
+            )
+            lines.append(
+                f'civicpulse_triage_duration_seconds_count{{provider="{provider}"}} {count}'
+            )
 
         # 4. Fallback counter
-        lines.append("\n# HELP civicpulse_triage_fallbacks_total Counter of triage calls that fell back to rules")
+        lines.append(
+            "\n# HELP civicpulse_triage_fallbacks_total Counter of triage calls that fell back to rules"
+        )
         lines.append("# TYPE civicpulse_triage_fallbacks_total counter")
         if not _triage_fallbacks:
             lines.append('civicpulse_triage_fallbacks_total{provider="rules:fallback"} 0')

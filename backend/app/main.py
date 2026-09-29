@@ -5,14 +5,13 @@ from __future__ import annotations
 import asyncio
 import logging
 import signal
+import time
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
-
-import time
-from contextlib import asynccontextmanager
 from starlette.responses import PlainTextResponse
 
 from app.core.metrics import format_prometheus_metrics, record_request
@@ -49,6 +48,7 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down — closing connections")
     await close_redis()
     from app.core.database import engine
+
     await engine.dispose()
     logger.info("Shutdown complete")
 
@@ -106,9 +106,7 @@ from fastapi.exceptions import RequestValidationError  # noqa: E402
 
 
 @app.exception_handler(RequestValidationError)
-async def fastapi_validation_handler(
-    request: Request, exc: RequestValidationError
-):
+async def fastapi_validation_handler(request: Request, exc: RequestValidationError):
     """Override FastAPI's default verbose validation error response."""
     errors = []
     for err in exc.errors():
@@ -134,4 +132,3 @@ async def request_metrics_and_drain_middleware(request: Request, call_next):
     duration = time.monotonic() - start_time
     record_request(request.method, request.url.path, response.status_code, duration)
     return response
-

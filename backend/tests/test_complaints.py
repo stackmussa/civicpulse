@@ -1,7 +1,8 @@
 """Tests for complaint endpoints: creation, validation, querying, and stats."""
 
-import pytest
 import uuid
+
+import pytest
 
 
 @pytest.mark.asyncio
@@ -139,6 +140,7 @@ async def test_create_complaint_resilience_when_provider_raises(client, monkeypa
 
     POST /api/complaints still returns 201 with triaged_by == 'rules:fallback' (never 500).
     """
+
     class AlwaysFailingProvider:
         name: str = "failing_mock"
 
@@ -146,6 +148,7 @@ async def test_create_complaint_resilience_when_provider_raises(client, monkeypa
             raise RuntimeError("Upstream LLM / AI service is completely down")
 
     from app.services import complaint_service
+
     monkeypatch.setattr(complaint_service, "_get_provider", lambda: AlwaysFailingProvider())
 
     payload = {
@@ -202,4 +205,3 @@ async def test_create_complaint_x_forwarded_for_rate_limit(client):
     headers = {"X-Forwarded-For": f"{custom_ip}, 10.0.0.1"}
     response = await client.post("/api/complaints", json=payload, headers=headers)
     assert response.status_code == 201
-

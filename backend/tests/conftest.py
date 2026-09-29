@@ -6,7 +6,7 @@ Uses an in-memory SQLite database via aiosqlite and overrides the get_db depende
 from __future__ import annotations
 
 import asyncio
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import pytest
 import pytest_asyncio
@@ -35,9 +35,7 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    session_factory = async_sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False
-    )
+    session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     async with session_factory() as session:
         yield session
 
@@ -49,6 +47,7 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
 @pytest_asyncio.fixture(scope="function")
 async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     """Test HTTP client with overridden get_db dependency."""
+
     async def _override_get_db():
         yield db_session
 
@@ -97,4 +96,3 @@ def mock_redis(monkeypatch):
     monkeypatch.setattr("app.providers.cache.get_redis", _get_mock_redis)
     monkeypatch.setattr("app.providers.rate_limiter.get_redis", _get_mock_redis)
     return r
-

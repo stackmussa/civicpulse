@@ -15,12 +15,8 @@ from app.models.complaint import Category, Priority, Status
 class ComplaintCreate(BaseModel):
     """Body for POST /api/complaints."""
 
-    text: str = Field(
-        ..., min_length=10, max_length=2000, description="Complaint text"
-    )
-    location: str = Field(
-        ..., min_length=3, max_length=200, description="Location"
-    )
+    text: str = Field(..., min_length=10, max_length=2000, description="Complaint text")
+    location: str = Field(..., min_length=3, max_length=200, description="Location")
     reporter_contact: str | None = Field(
         default=None, max_length=200, description="Optional contact"
     )

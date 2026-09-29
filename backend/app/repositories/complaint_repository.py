@@ -40,9 +40,7 @@ async def create_complaint(
     return complaint
 
 
-async def get_complaint_by_id(
-    db: AsyncSession, complaint_id: uuid.UUID
-) -> Complaint | None:
+async def get_complaint_by_id(db: AsyncSession, complaint_id: uuid.UUID) -> Complaint | None:
     """Fetch a single complaint by its UUID."""
     stmt = select(Complaint).where(Complaint.id == complaint_id)
     result = await db.execute(stmt)
@@ -107,14 +105,8 @@ async def update_complaint_status(
 
 async def get_stats(db: AsyncSession) -> dict:
     """Compute aggregate counts by category and priority."""
-    cat_stmt = (
-        select(Complaint.category, func.count())
-        .group_by(Complaint.category)
-    )
-    pri_stmt = (
-        select(Complaint.priority, func.count())
-        .group_by(Complaint.priority)
-    )
+    cat_stmt = select(Complaint.category, func.count()).group_by(Complaint.category)
+    pri_stmt = select(Complaint.priority, func.count()).group_by(Complaint.priority)
     total_stmt = select(func.count()).select_from(Complaint)
 
     cat_result = await db.execute(cat_stmt)
@@ -122,21 +114,13 @@ async def get_stats(db: AsyncSession) -> dict:
     total_result = await db.execute(total_stmt)
 
     return {
-        "by_category": [
-            {"category": row[0].value, "count": row[1]}
-            for row in cat_result.all()
-        ],
-        "by_priority": [
-            {"priority": row[0].value, "count": row[1]}
-            for row in pri_result.all()
-        ],
+        "by_category": [{"category": row[0].value, "count": row[1]} for row in cat_result.all()],
+        "by_priority": [{"priority": row[0].value, "count": row[1]} for row in pri_result.all()],
         "total": total_result.scalar() or 0,
     }
 
 
-async def get_recent_triage_outcomes(
-    db: AsyncSession, limit: int = 20
-) -> list[dict]:
+async def get_recent_triage_outcomes(db: AsyncSession, limit: int = 20) -> list[dict]:
     """Return the last *limit* triage outcomes for /api/meta/providers."""
     stmt = (
         select(
