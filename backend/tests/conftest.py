@@ -65,6 +65,7 @@ class MockRedis:
 
     def __init__(self) -> None:
         self.store: dict[str, str] = {}
+        self.data = self.store
 
     async def get(self, key: str) -> str | None:
         return self.store.get(key)
@@ -74,6 +75,11 @@ class MockRedis:
 
     async def delete(self, key: str) -> None:
         self.store.pop(key, None)
+
+    async def incr(self, key: str) -> int:
+        val = int(self.store.get(key, 0)) + 1
+        self.store[key] = str(val)
+        return val
 
     async def ping(self) -> bool:
         return True

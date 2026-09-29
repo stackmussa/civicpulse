@@ -81,10 +81,16 @@ async def get_cached_triage(text: str, location: str) -> dict | None:
     """Return cached triage result or None, tracking hits vs total calls."""
     try:
         r = await get_redis()
-        await r.incr("civicpulse:triage:total")
+        try:
+            await r.incr("civicpulse:triage:total")
+        except Exception as exc:
+            logger.warning("Redis triage total metric error: %s", exc)
         raw = await r.get(_triage_cache_key(text, location))
         if raw is not None:
-            await r.incr("civicpulse:triage:hits")
+            try:
+                await r.incr("civicpulse:triage:hits")
+            except Exception as exc:
+                logger.warning("Redis triage hit metric error: %s", exc)
             logger.debug("Triage cache HIT")
             return json.loads(raw)
     except Exception as exc:
