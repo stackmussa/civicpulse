@@ -10,13 +10,19 @@ from sqlalchemy.ext.asyncio import (
 
 from app.core.config import settings
 
-engine = create_async_engine(
-    settings.DATABASE_URL,
-    echo=False,
-    pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20,
-)
+
+def _engine_kwargs(database_url: str) -> dict[str, int | bool]:
+    kwargs: dict[str, int | bool] = {
+        "echo": False,
+        "pool_pre_ping": True,
+    }
+    if not database_url.startswith("sqlite"):
+        kwargs["pool_size"] = 10
+        kwargs["max_overflow"] = 20
+    return kwargs
+
+
+engine = create_async_engine(settings.DATABASE_URL, **_engine_kwargs(settings.DATABASE_URL))
 
 async_session_factory = async_sessionmaker(
     engine,
