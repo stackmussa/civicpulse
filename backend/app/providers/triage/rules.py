@@ -39,7 +39,9 @@ _HIGH_PRIORITY_KEYWORDS: list[str] = [
     "injury", "injured", "collapse", "collapsed", "burst",
     "electrocution", "spark", "short circuit", "foran", "jaldi",
     "immediately", "critical", "severe", "fatal",
+    # Synthesized resolution: Environmental hazards + Life-safety / Urdu terms
     "drowning", "hazards", "monsoon", "short-circuit", "waterlogging",
+    "janleva", "emergency call", "blast", "gas leak", "ambulance", "casualty",
 ]
 
 
