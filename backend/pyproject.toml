@@ -1,29 +1,73 @@
 [project]
 name = "backend"
 version = "0.1.0"
-description = "Add your description here"
+description = "CivicPulse — municipal complaint intake, triage and operations platform"
 readme = "README.md"
 authors = [
     { name = "Mussa Raza", email = "i243022@isb.nu.edu.pk" }
 ]
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
+    "aiosqlite>=0.22.1",
     "alembic>=1.20.0",
-    "fastapi>=0.141.1",
-    "pydantic>=2.13.5",
-    "sqlalchemy>=2.0.54",
+    "asyncpg>=0.30.0",
+    "fastapi>=0.115.0",
+    "httpx>=0.28.0",
+    "openai>=1.60.0",
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.7.0",
+    "redis>=5.2.0",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "structlog>=24.4.0",
+    "uvicorn[standard]>=0.34.0",
 ]
 
 [project.scripts]
 backend = "backend:main"
 
 [build-system]
-requires = ["uv_build>=0.12.15,<0.13.0"]
-build-backend = "uv_build"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
 
 [dependency-groups]
 dev = [
-    "mypy>=2.3.1",
-    "pytest>=9.1.1",
-    "ruff>=0.16.8",
+    "mypy>=1.14.0",
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.25.0",
+    "pytest-cov>=6.0.0",
+    "ruff>=0.8.0",
 ]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["B008", "E501", "UP042"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.params.Depends",
+    "fastapi.Query",
+    "fastapi.params.Query",
+    "fastapi.Path",
+    "fastapi.params.Path",
+    "fastapi.Header",
+    "fastapi.params.Header",
+]
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "strict"
+testpaths = ["tests"]
+addopts = "-v --cov=app --cov-report=term-missing"
+
