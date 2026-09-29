@@ -136,9 +136,20 @@ jobs:
           wait: 120s
 
       - name: Set up Kustomize
-        uses: imranismail/setup-kustomize@v3
-        with:
-          kustomize-version: "v5.6.0"
+        shell: bash
+        run: |
+          set -euo pipefail
+          KUSTOMIZE_VERSION="v5.6.0"
+          curl -fsSL \
+            -o /tmp/kustomize.tar.gz \
+            "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz"
+          tar -xzf /tmp/kustomize.tar.gz -C /tmp
+          sudo install -m 0755 /tmp/kustomize /usr/local/bin/kustomize
+          kustomize version
+
+      - name: Install VPA CRDs
+        run: |
+          kubectl apply -f https://raw.githubusercontent.com/kubernetes/autoscaler/master/vertical-pod-autoscaler/deploy/vpa-v1-crd-gen.yaml
 
       - name: Patch Overlays with Immutable SHA Image Reference
         run: |
