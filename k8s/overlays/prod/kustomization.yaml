@@ -3,3 +3,14 @@ kind: Kustomization
 resources:
 - ../../base
 namePrefix: prod-
+
+patches:
+- target:
+    group: autoscaling.k8s.io
+    version: v1
+    kind: VerticalPodAutoscaler
+    name: backend-vpa
+  patch: |-
+    - op: replace
+      path: /spec/targetRef/name
+      value: prod-backend
