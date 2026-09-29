@@ -16,8 +16,31 @@ spec:
       containers:
       - name: redis
         image: redis:7
+        command: ["redis-server", "--appendonly", "yes"]
         ports:
         - containerPort: 6379
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+        startupProbe:
+          exec:
+            command: ["redis-cli", "ping"]
+          failureThreshold: 15
+          periodSeconds: 2
+        livenessProbe:
+          exec:
+            command: ["redis-cli", "ping"]
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command: ["redis-cli", "ping"]
+          initialDelaySeconds: 5
+          periodSeconds: 5
         volumeMounts:
         - name: redisdata
           mountPath: /data
