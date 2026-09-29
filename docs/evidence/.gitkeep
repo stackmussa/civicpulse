@@ -1,0 +1,5 @@
+# Evidence directory for Phase 10 / Rubric requirements:
+# - Branch protection configuration screenshot
+# - Deliberate merge conflict resolution screenshot
+# - Blocked merge (red CI) and passing merge (green CI) screenshots
+# - HPA scale-out capture and replicas-vs-load chart
