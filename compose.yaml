@@ -20,6 +20,7 @@ services:
     networks:
       - edge
       - internal
+    # Dev bind mount: mounted for instant hot-reload during local iteration without container rebuilds.
     volumes:
       - ./backend:/app
     environment:

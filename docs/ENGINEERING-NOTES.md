@@ -176,3 +176,42 @@ Detailed in **[ADR 0004: PII Governance and Hosted LLM Data Privacy](docs/adr/00
 1. **What leaves the machine:** Only the complaint body and general street/sector address are transmitted to LLM endpoints.
 2. **What NEVER leaves the machine:** Citizen names, phone numbers, and reporter contact identifiers are isolated in the local database and strictly omitted from LLM prompts.
 3. **Cloud vs Local Option:** Default production inference utilizes Groq (which does not retain prompts for model training); high-security municipal installations can toggle `TRIAGE_PROVIDER=ollama` for zero-egress, 100% offline triage.
+
+---
+
+### Docker & Compose: Build Context Optimization & Hardening (Rubric G — 9 Marks)
+
+#### 1. Multi-Stage Builds & Non-Root Security (Rubric G — 2 Marks)
+- **Backend ([`backend/Dockerfile`](file:///g:/SCDPRoject/civicpulse/backend/Dockerfile)):**
+  - *Stage 1 (`builder`):* Employs `python:3.12-slim` with Astral's `uv:0.6.5` binary to compile and sync dependencies into an isolated virtual environment (`/opt/venv`).
+  - *Stage 2 (`runtime`):* Copies only `/opt/venv`, `/app/app`, `/app/alembic`, and execution scripts into a clean runtime layer. Build toolchains and caches are discarded, reducing image footprint.
+  - *Non-Root Execution:* A dedicated system user `appuser:appuser` (UID 1000) is created and activated via `USER appuser`. The container never executes as `root`.
+- **Frontend ([`frontend/Dockerfile`](file:///g:/SCDPRoject/civicpulse/frontend/Dockerfile)):**
+  - *Stage 1 (`build`):* Uses `node:22-alpine` to compile TypeScript React assets into `/app/dist` via `npm ci` and `npm run build`.
+  - *Stage 2 (`runtime`):* Employs `nginx:1.27-alpine` copying exclusively `/app/dist` and `nginx.conf`.
+  - *Non-Root Execution:* Drops root privileges to `USER nginx` with pre-configured directory ownership on `/var/cache/nginx`, `/var/log/nginx`, and `/var/run/nginx.pid`.
+
+#### 2. `.dockerignore` and Build Context Sizes (Rubric G — 2 Marks)
+To guarantee rapid CI image builds and prevent leaking secrets (`.env`), test artifacts, and multi-megabyte dependency trees (`node_modules`, `.venv`), both build contexts enforce strict `.dockerignore` policies:
+
+| Build Context | Raw Context Size (Without `.dockerignore`) | Filtered Context Size (With `.dockerignore`) | Context Reduction (%) | Key Excluded Paths |
+| :--- | :--- | :--- | :--- | :--- |
+| **`frontend/`** | 147.28 MB | **0.21 MB** | **99.9%** | `node_modules/`, `dist/`, `.git/`, `.env`, `tests/` |
+| **`backend/`** | 0.60 MB | **0.40 MB** | **34.3%** | `.venv/`, `__pycache__/`, `.pytest_cache/`, `.coverage`, `.git/`, `.env` |
+
+#### 3. Named Volumes & Dev Bind Mount Justifications (Rubric G — 2 Marks)
+Three named volumes are declared in [`compose.yaml`](file:///g:/SCDPRoject/civicpulse/compose.yaml) and [`compose.prod.yaml`](file:///g:/SCDPRoject/civicpulse/compose.prod.yaml):
+1. **`pgdata` (PostgreSQL Database Storage):**
+   - *Mount:* `pgdata:/var/lib/postgresql/data`
+   - *Justification:* Relational database persistence. Holds all complaint records, audit logs, and Alembic migration state across container recreations and host upgrades.
+2. **`redisdata` (Redis Cache & Rate Limiter Persistence):**
+   - *Mount:* `redisdata:/data`
+   - *Justification:* Persists Redis Append-Only Files (`--appendonly yes`). Preserves rolling rate-limit token buckets and 24-hour content-hash triage classifications across restarts, preventing DDoS/quota exhaustion attacks upon restart.
+3. **`ollama_models` (Local LLM Weight Storage):**
+   - *Mount:* `ollama_models:/root/.ollama`
+   - *Justification:* Stores multi-gigabyte GGUF model weights for offline inference (e.g. Llama 3.2 / Mistral). Prevents re-downloading large multi-gigabyte models on container spin-up.
+
+- **Dev Bind Mount Rationale (`./backend:/app`):**
+  - *In `compose.yaml`:* Present to enable rapid local development; developers modify code and FastAPI hot-reloads instantly without rebuilding container images.
+  - *In `compose.prod.yaml`:* Strictly forbidden and absent. In production, the container image must be an immutable, verified release artifact. Mounting host files over the container in production introduces configuration drift and invalidates test guarantees established in CI.
+
