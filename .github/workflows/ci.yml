@@ -255,27 +255,43 @@ jobs:
         run: |
           docker compose up -d
 
-      - name: Wait for Backend Health
+      - name: Wait for Backend and Dependencies Readiness
         run: |
-          echo "Polling backend /health endpoint..."
+          echo "Polling backend /ready endpoint..."
           for i in {1..30}; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health || echo "000")
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/ready || echo "000")
             if [ "$STATUS" = "200" ]; then
-              echo "Backend is healthy (HTTP 200)!"
+              echo "Backend and data dependencies are fully ready (HTTP 200)!"
               break
             fi
-            echo "Waiting for backend... ($i/30, status=$STATUS)"
+            echo "Waiting for backend readiness... ($i/30, status=$STATUS)"
             sleep 2
           done
+          if [ "$STATUS" != "200" ]; then
+            echo "Backend failed to become ready in time"
+            docker compose logs
+            exit 1
+          fi
+
+      - name: Run Database Migrations
+        run: |
+          docker compose exec -T backend alembic upgrade head
 
       - name: Test End-to-End Complaint Ingestion & Triage
         run: |
-          curl -s -X POST http://localhost:8000/api/complaints \
+          HTTP_STATUS=$(curl -s -o complaint.json -w "%{http_code}" -X POST http://localhost:8000/api/complaints \
             -H "Content-Type: application/json" \
-            -d '{"text":"Severe burst water pipe flooding main commercial avenue","location":"Sector F-10 Market"}' \
-            -o complaint.json
+            -d '{"text":"Severe burst water pipe flooding main commercial avenue","location":"Sector F-10 Market"}')
+          echo "HTTP Response Status: $HTTP_STATUS"
+          echo "Response Body:"
           cat complaint.json
-          python3 -c "import json; res = json.load(open('complaint.json')); assert res.get('id') is not None, 'Missing complaint id'; assert res.get('category') in ['roads', 'water', 'electricity', 'waste', 'other'], f'Invalid category: {res.get(\"category\")}'; assert res.get('priority') in ['low', 'medium', 'high', 'urgent'], f'Invalid priority: {res.get(\"priority\")}'; print('E2E Complaint ingestion contract verified successfully!')"
+          echo ""
+          if [ "$HTTP_STATUS" != "201" ]; then
+            echo "Failed to create complaint, expected HTTP 201 Created"
+            docker compose logs backend
+            exit 1
+          fi
+          python3 -c "import json; res = json.load(open('complaint.json')); assert res.get('id') is not None, 'Missing complaint id'; assert res.get('category') in ['roads', 'water', 'electricity', 'waste', 'sanitation', 'streetlights', 'other'], f'Invalid category: {res.get(\"category\")}'; assert res.get('priority') in ['low', 'normal', 'medium', 'high', 'urgent'], f'Invalid priority: {res.get(\"priority\")}'; print('E2E Complaint ingestion contract verified successfully!')"
 
       - name: Test Redis Cache MISS and HIT Transitions
         run: |
